@@ -2,7 +2,7 @@ QUIZZES = {
     "1": {
         "question": "What does owning a stock like Tesla (TSLA) mean?",
         "options": [
-            "A: You own a small piece of the company and share \n in its success",
+            "A: You own a small piece and share in its success",
             "B: You owe Tesla money for their Cybertruck",
             "C: You get free Tesla cars as a perk",
             "D: You control Tesla’s decisions"
@@ -10,27 +10,27 @@ QUIZZES = {
         "answer": "A"
     },
     "2": {
-        "question": "Why should you diversify your investments, like splitting money between Nvidia (NVDA) and Walmart (WMT)?",
+        "question": "Why diversify, like splitting Nvidia and Walmart?",
         "options": [
-            "A: To focus all your money on one stock for bigger gains",
-            "B: To reduce risk by spreading investments \n across different sectors",
+            "A: To focus all money on one stock for big gains",
+            "B: To reduce risk by spreading across sectors",
             "C: To buy only the most expensive stocks",
             "D: To avoid paying taxes on profits"
         ],
         "answer": "B"
     },
     "3": {
-        "question": "What can cause Microsoft (MSFT) stock to jump from $430 to $450 in a day?",
+        "question": "What can make Microsoft (MSFT) jump $430 to $450?",
         "options": [
             "A: A big AI tool announcement increases demand",
             "B: The CEO’s favorite color changes",
-            "C: The number of shareholders doubles overnight",
+            "C: Shareholders double overnight",
             "D: It rains in Seattle"
         ],
         "answer": "A"
     },
     "4": {
-        "question": "If Coca-Cola (KO) pays a $0.48 quarterly dividend and you own 50 shares, how much do you earn per quarter?",
+        "question": "Coca-Cola (KO) pays $0.48 dividend, 50 shares earns?",
         "options": [
             "A: $4.80",
             "B: $24.00",
@@ -40,22 +40,22 @@ QUIZZES = {
         "answer": "B"
     },
     "5": {
-        "question": "What’s the first step to buy 2 shares of Starbucks (SBUX) at $95 each?",
+        "question": "First step to buy 2 Starbucks (SBUX) at $95 each?",
         "options": [
-            "A: Open a broker app like Robinhood and fund \n it with $190",
+            "A: Open a broker app like Robinhood with $190",
             "B: Call Starbucks HQ for permission",
             "C: Wait for a stock certificate in the mail",
-            "D: Ask the bot to buy it with /simulator"
+            "D: Use /simulator to buy it in the bot"
         ],
         "answer": "A"
     },
     "6": {
-        "question": "You have $500 to start investing in 2025. Which is a smart beginner plan?",
+        "question": "Smart $500 beginner plan for 2025?",
         "options": [
-            "A: Buy 2 Disney (DIS) at $110, 5 Ford (F) at $12, \n and 1 PepsiCo (PEP) at $175",
-            "B: Put all $500 into one hyped AI stock for quick riches",
-            "C: Wait until you have $5,000 to start investing",
-            "D: Buy stocks with no research to diversify"
+            "A: 2 Disney ($110), 5 Ford ($12), 1 PepsiCo ($175)",
+            "B: All $500 in one hyped AI stock for quick riches",
+            "C: Wait until you have $5,000 to invest",
+            "D: Buy random stocks with no research"
         ],
         "answer": "A"
     }
