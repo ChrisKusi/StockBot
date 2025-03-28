@@ -976,7 +976,6 @@ def home():
     return "Stock Mentor Bot is running!"
 
 def run_flask():
-    # Bind to port 8080 (Render expects a port; can be changed via PORT env var)
     flask_app.run(host='0.0.0.0', port=int(os.getenv("PORT", 8080)))
 
 # Download VADER lexicon for Render
@@ -991,7 +990,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
-logging.getLogger().addHandler(logging.StreamHandler())  # Show logs in Render console
+logging.getLogger().addHandler(logging.StreamHandler())
 
 # Load environment variables
 load_dotenv()
@@ -1073,7 +1072,7 @@ def convert_currency(amount, from_currency, to_currency):
     try:
         return c.convert(from_currency, to_currency, amount)
     except:
-        return amount  # Fallback to USD if conversion fails
+        return amount
 
 # AI Chat with rate limiting
 CALLS = 5
@@ -1099,36 +1098,34 @@ def ai_chat(question):
 def get_market_mood(symbol):
     if not NEWS_API_KEY:
         return "❌ News API key missing."
-    url = f"https://newsapi.org/v2/everything?q={symbol}+stock&apiKey={NEWS_API_KEY}"
+    url = f"https://newsapi.org/v2/everything?q={symbol}+stock&apiKey={NEWS_API_KEY}&language=en&sortBy=publishedAt"
     try:
         response = requests.get(url)
         response.raise_for_status()
+        articles = response.json().get("articles", [])
+        if not articles:
+            return f"🌍 No recent sentiment data for {symbol}."
+        sia = SentimentIntensityAnalyzer()
+        total_compound = 0
+        count = 0
+        for article in articles[:5]:
+            text = article.get("title", "") + " " + article.get("description", "")
+            if text:
+                scores = sia.polarity_scores(text)
+                total_compound += scores["compound"]
+                count += 1
+        if count == 0:
+            return f"🌍 No sentiment data available for {symbol}."
+        avg_sentiment = total_compound / count
+        if avg_sentiment > 0.05:
+            return f"🌍 Market Mood for {symbol}: Positive ({avg_sentiment:.2f})"
+        elif avg_sentiment < -0.05:
+            return f"🌍 Market Mood for {symbol}: Negative ({avg_sentiment:.2f})"
+        else:
+            return f"🌍 Market Mood for {symbol}: Neutral ({avg_sentiment:.2f})"
     except Exception as e:
         logging.error(f"News API Error: {str(e)}")
-        return f"❌ Failed to fetch news for {symbol}."
-    articles = response.json().get("articles", [])
-    if not articles:
-        return f"🌍 No recent sentiment data for {symbol}."
-    
-    sia = SentimentIntensityAnalyzer()
-    total_compound = 0
-    count = 0
-    for article in articles[:5]:
-        text = article.get("title", "") + " " + article.get("description", "")
-        if text:
-            scores = sia.polarity_scores(text)
-            total_compound += scores["compound"]
-            count += 1
-    
-    if count == 0:
-        return f"🌍 No sentiment data available for {symbol}."
-    avg_sentiment = total_compound / count
-    if avg_sentiment > 0.05:
-        return f"🌍 Market Mood for {symbol}: Positive ({avg_sentiment:.2f})"
-    elif avg_sentiment < -0.05:
-        return f"🌍 Market Mood for {symbol}: Negative ({avg_sentiment:.2f})"
-    else:
-        return f"🌍 Market Mood for {symbol}: Neutral ({avg_sentiment:.2f})"
+        return f"❌ Failed to fetch news for {symbol}: {str(e)}"
 
 # Commands
 async def start(update: Update, context: CallbackContext):
@@ -1370,21 +1367,29 @@ async def portfolio(update: Update, context: CallbackContext):
     try:
         holdings, total_value = get_portfolio(user_id)
         if not holdings:
-            await update.message.reply_text("📉 Your portfolio is empty. Add stocks with /add!")
-            return
-        _, _, _, _, lang, _, _ = get_user_data(user_id)
-        currency = "USD" if lang == "en" else "EUR" if lang == "fr" else "GBP" if lang == "es" else "USD"
-        message = "📊 Your Portfolio:\n"
-        total_converted = convert_currency(total_value, "USD", currency)
-        for symbol, qty, price, value in holdings:
-            converted_price = convert_currency(price, "USD", currency)
-            converted_value = convert_currency(value, "USD", currency)
-            message += f"{symbol}: {qty} shares @ {converted_price:.2f} {currency} = {converted_value:.2f} {currency}\n"
-        message += f"💰 Total Value: {total_converted:.2f} {currency}"
-        await update.message.reply_text(message)
+            response = "📉 Your portfolio is empty. Add stocks with /add!"
+        else:
+            _, _, _, _, lang, _, _ = get_user_data(user_id)
+            currency = "USD" if lang == "en" else "EUR" if lang == "fr" else "GBP" if lang == "es" else "USD"
+            message = "📊 Your Portfolio:\n"
+            total_converted = convert_currency(total_value, "USD", currency)
+            for symbol, qty, price, value in holdings:
+                converted_price = convert_currency(price, "USD", currency)
+                converted_value = convert_currency(value, "USD", currency)
+                message += f"{symbol}: {qty} shares @ {converted_price:.2f} {currency} = {converted_value:.2f} {currency}\n"
+            message += f"💰 Total Value: {total_converted:.2f} {currency}"
+            response = message
+        if update.message:  # From command
+            await update.message.reply_text(response)
+        else:  # From callback
+            await update.callback_query.edit_message_text(response)
     except Exception as e:
         logging.error(f"Portfolio Error: {str(e)}")
-        await update.message.reply_text(f"❌ Error fetching portfolio: {str(e)}")
+        response = f"❌ Error fetching portfolio: {str(e)}"
+        if update.message:
+            await update.message.reply_text(response)
+        else:
+            await update.callback_query.edit_message_text(response)
 
 async def portfolio_chart(update: Update, context: CallbackContext):
     user_id = update.effective_user.id
@@ -1445,36 +1450,41 @@ async def performance(update: Update, context: CallbackContext):
         await update.message.reply_text(f"❌ Error calculating performance: {str(e)}")
 
 async def simulator(update: Update, context: CallbackContext):
-    user_id = update.effective_user.id
+    user_id = update.effective_user.id if update.message else update.callback_query.from_user.id
     _, _, _, balance, lang, _, _ = get_user_data(user_id)
     currency = "USD" if lang == "en" else "EUR" if lang == "fr" else "GBP" if lang == "es" else "USD"
     balance_converted = convert_currency(balance, "USD", currency)
-    if not context.args or context.args[0] not in ["buy", "sell"]:
-        await update.message.reply_text(
-            f"💵 Stock Simulator (Balance: {balance_converted:.2f} {currency})\n"
-            "Use: /simulator <buy/sell> <symbol> <quantity>"
-        )
-        return
-    try:
-        action, symbol, qty = context.args[0], context.args[1].upper(), int(context.args[2])
-        stock = yf.Ticker(symbol).info
-        price = stock.get("regularMarketPrice", 0)
-        if price == 0:
-            await update.message.reply_text(f"❌ No price data for {symbol}.")
-            return
-        cost = price * qty
-        cost_converted = convert_currency(cost, "USD", currency)
-        keyboard = [
-            [InlineKeyboardButton("Yes", callback_data=f"sim_confirm_{action}_{symbol}_{qty}_{cost}"),
-             InlineKeyboardButton("No", callback_data="sim_cancel")]
-        ]
-        await update.message.reply_text(
-            f"Confirm {action}ing {qty} {symbol} for {cost_converted:.2f} {currency}?",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-    except Exception as e:
-        logging.error(f"Simulator Error: {str(e)}")
-        await update.message.reply_text(f"❌ Error in simulator: {str(e)}")
+    if (update.message and not context.args) or (not update.message):  # From callback or no args
+        response = f"💵 Stock Simulator (Balance: {balance_converted:.2f} {currency})\nUse: /simulator <buy/sell> <symbol> <quantity>"
+    elif context.args[0] not in ["buy", "sell"]:
+        response = f"💵 Stock Simulator (Balance: {balance_converted:.2f} {currency})\nUse: /simulator <buy/sell> <symbol> <quantity>"
+    else:
+        try:
+            action, symbol, qty = context.args[0], context.args[1].upper(), int(context.args[2])
+            stock = yf.Ticker(symbol).info
+            price = stock.get("regularMarketPrice", 0)
+            if price == 0:
+                response = f"❌ No price data for {symbol}."
+            else:
+                cost = price * qty
+                cost_converted = convert_currency(cost, "USD", currency)
+                keyboard = [
+                    [InlineKeyboardButton("Yes", callback_data=f"sim_confirm_{action}_{symbol}_{qty}_{cost}"),
+                     InlineKeyboardButton("No", callback_data="sim_cancel")]
+                ]
+                response = f"Confirm {action}ing {qty} {symbol} for {cost_converted:.2f} {currency}?"
+                if update.message:
+                    await update.message.reply_text(response, reply_markup=InlineKeyboardMarkup(keyboard))
+                else:
+                    await update.callback_query.edit_message_text(response, reply_markup=InlineKeyboardMarkup(keyboard))
+                return
+        except Exception as e:
+            logging.error(f"Simulator Error: {str(e)}")
+            response = f"❌ Error in simulator: {str(e)}"
+    if update.message:
+        await update.message.reply_text(response)
+    else:
+        await update.callback_query.edit_message_text(response)
 
 async def simulator_callback(update: Update, context: CallbackContext):
     query = update.callback_query
@@ -1584,9 +1594,9 @@ async def news(update: Update, context: CallbackContext):
     try:
         if context.args:
             symbol = context.args[0].upper()
-            url = f"https://newsapi.org/v2/everything?q={symbol}+stock+performance&apiKey={NEWS_API_KEY}"
+            url = f"https://newsapi.org/v2/everything?q={symbol}+stock&apiKey={NEWS_API_KEY}&language=en&sortBy=publishedAt"
         else:
-            url = f"https://newsapi.org/v2/top-headlines?category=business&apiKey={NEWS_API_KEY}"
+            url = f"https://newsapi.org/v2/top-headlines?category=business&apiKey={NEWS_API_KEY}&language=en"
         response = requests.get(url)
         response.raise_for_status()
         articles = response.json().get("articles", [])
@@ -1845,17 +1855,18 @@ async def dashboard_callback(update: Update, context: CallbackContext):
     if action == "lessons":
         await query.edit_message_text("📚 Start with /lesson 1")
     elif action == "portfolio":
-        await portfolio(query, context)
+        await portfolio(update, context)
     elif action == "simulator":
-        await simulator(query, context)
+        await simulator(update, context)
     elif action == "community":
         keyboard = [[InlineKeyboardButton("Join Now", url="https://t.me/+mBySG-U2LuE5OGVk")]]
         await query.edit_message_text("🌟 Join our community!", reply_markup=InlineKeyboardMarkup(keyboard))
 
 async def error_handler(update: Update, context: CallbackContext):
     logging.error(f"Error: {context.error}")
-    if update and update.message:
-        await update.message.reply_text("❌ An error occurred. Try again or use /contact to report it.")
+    if update and (update.message or update.callback_query):
+        target = update.message if update.message else update.callback_query
+        await target.reply_text("❌ An error occurred. Try again or use /contact to report it.")
 
 # Main
 def main():
@@ -1904,8 +1915,8 @@ def main():
 
     # Start Flask in a separate thread
     threading.Thread(target=run_flask, daemon=True).start()
-    # Start Telegram bot polling
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+    # Start Telegram bot polling with drop_pending_updates to avoid conflicts
+    app.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
 
 if __name__ == "__main__":
     main()
