@@ -1591,27 +1591,43 @@ async def news(update: Update, context: CallbackContext):
     if not NEWS_API_KEY:
         await update.message.reply_text("❌ News API key missing.")
         return
+    
     try:
-        if response.status_code == 429:
-            await update.message.reply_text("📰 News limit reached today. Try again tomorrow!")
-            return
-        
+        # Construct URL based on input
         if context.args:
             symbol = context.args[0].upper()
             url = f"https://newsapi.org/v2/everything?q={symbol}+stock&apiKey={NEWS_API_KEY}&language=en&sortBy=publishedAt"
         else:
             url = f"https://newsapi.org/v2/top-headlines?category=business&apiKey={NEWS_API_KEY}&language=en"
+        
+        # Fetch news
         response = requests.get(url)
-        response.raise_for_status()
+        response.raise_for_status()  # Raises exception for 4xx/5xx errors
+        
+        # Process response
         articles = response.json().get("articles", [])
         if not articles:
             await update.message.reply_text("📰 No news available.")
             return
+        
+        # Build message
         message = "📰 Latest Stock Market News:\n\n"
         for article in articles[:5]:
             message += f"• {article['title']}\n{article['url']}\n\n"
         await update.message.reply_text(message)
+    
+    except requests.RequestException as e:
+        # Specific HTTP/network errors (e.g., 403, 429, connection issues)
+        logging.error(f"News API Request Error: {str(e)}")
+        error_msg = "❌ Couldn't fetch news: API request failed."
+        if hasattr(e.response, 'status_code'):
+            if e.response.status_code == 403:
+                error_msg = "❌ News API access denied (403). Check API key."
+            elif e.response.status_code == 429:
+                error_msg = "❌ News API rate limit reached (429). Try later."
+        await update.message.reply_text(error_msg)
     except Exception as e:
+        # Catch-all for other unexpected errors
         logging.error(f"News Error: {str(e)}")
         await update.message.reply_text(f"❌ Couldn't fetch news: {str(e)}")
 
