@@ -2,7 +2,7 @@ QUIZZES = {
     "1": {
         "question": "What does owning a stock like Tesla (TSLA) mean?",
         "options": [
-            "A: You own a small piece of the company and share in its success",
+            "A: You own a small piece of the company and share \n in its success",
             "B: You owe Tesla money for their Cybertruck",
             "C: You get free Tesla cars as a perk",
             "D: You control Tesla’s decisions"
@@ -13,7 +13,7 @@ QUIZZES = {
         "question": "Why should you diversify your investments, like splitting money between Nvidia (NVDA) and Walmart (WMT)?",
         "options": [
             "A: To focus all your money on one stock for bigger gains",
-            "B: To reduce risk by spreading investments across different sectors",
+            "B: To reduce risk by spreading investments \n across different sectors",
             "C: To buy only the most expensive stocks",
             "D: To avoid paying taxes on profits"
         ],
@@ -42,7 +42,7 @@ QUIZZES = {
     "5": {
         "question": "What’s the first step to buy 2 shares of Starbucks (SBUX) at $95 each?",
         "options": [
-            "A: Open a broker app like Robinhood and fund it with $190",
+            "A: Open a broker app like Robinhood and fund \n it with $190",
             "B: Call Starbucks HQ for permission",
             "C: Wait for a stock certificate in the mail",
             "D: Ask the bot to buy it with /simulator"
@@ -52,7 +52,7 @@ QUIZZES = {
     "6": {
         "question": "You have $500 to start investing in 2025. Which is a smart beginner plan?",
         "options": [
-            "A: Buy 2 Disney (DIS) at $110, 5 Ford (F) at $12, and 1 PepsiCo (PEP) at $175",
+            "A: Buy 2 Disney (DIS) at $110, 5 Ford (F) at $12, \n and 1 PepsiCo (PEP) at $175",
             "B: Put all $500 into one hyped AI stock for quick riches",
             "C: Wait until you have $5,000 to start investing",
             "D: Buy stocks with no research to diversify"
