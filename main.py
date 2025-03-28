@@ -1592,6 +1592,10 @@ async def news(update: Update, context: CallbackContext):
         await update.message.reply_text("❌ News API key missing.")
         return
     try:
+        if response.status_code == 429:
+            await update.message.reply_text("📰 News limit reached today. Try again tomorrow!")
+            return
+        
         if context.args:
             symbol = context.args[0].upper()
             url = f"https://newsapi.org/v2/everything?q={symbol}+stock&apiKey={NEWS_API_KEY}&language=en&sortBy=publishedAt"
