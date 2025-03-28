@@ -1090,7 +1090,7 @@ def ai_chat(question):
             f"User: {question}\nAssistant:"
         )
         response = model.generate_content(prompt)
-        return f"🤖 Gemini says: {response.text}"
+        return f"🤖 StockBot says: {response.text}"
     except Exception as e:
         logging.error(f"AI Chat Error: {str(e)}")
         return f"❌ AI error: {str(e)}. Try again!"
